@@ -87,11 +87,11 @@
 #include <ql/experimental/processes/hestonslvprocess.hpp>
 #include <ql/experimental/barrieroption/doublebarrieroption.hpp>
 #include <ql/experimental/barrieroption/analyticdoublebarrierbinaryengine.hpp>
+#include <ql/functional.hpp>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/math/special_functions/gamma.hpp>
 
-#include <boost/bind.hpp>
 #if defined(__GNUC__) && (((__GNUC__ == 4) && (__GNUC_MINOR__ >= 8)) || (__GNUC__ > 4))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
@@ -424,7 +424,7 @@ void HestonSLVModelTest::testTransformedZeroFlowBC() {
 }
 
 namespace {
-    class q_fct : public std::unary_function<Real, Real> {
+    class q_fct {
       public:
         q_fct(const Array& v, const Array& p, const Real alpha)
         : v_(v), q_(Pow(v, alpha)*p), alpha_(alpha),
@@ -683,11 +683,13 @@ namespace {
         Time maturity, Real eps,
         const ext::shared_ptr<HestonModel>& model) {
 
+        using namespace ext::placeholders;
+
         const AnalyticPDFHestonEngine pdfEngine(model);
         const Real sInit = model->process()->s0()->value();
         const Real xMin = Brent().solve(
-            boost::bind(std::minus<Real>(),
-                boost::bind(&AnalyticPDFHestonEngine::cdf,
+            ext::bind(std::minus<Real>(),
+                ext::bind(&AnalyticPDFHestonEngine::cdf,
                             &pdfEngine, _1, maturity), eps),
                         sInit*1e-3, sInit, sInit*0.001, 1000*sInit);
 

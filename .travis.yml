@@ -3,7 +3,6 @@ language: cpp
 
 os: linux
 dist: trusty
-sudo: required
 compiler: gcc
 services: docker
 
@@ -35,6 +34,10 @@ env:
       CXXFLAGS="-O2 -Wall -Wno-unknown-pragmas -Wno-deprecated-declarations -Werror -std=c++17"
     # Latest Boost, clang 6.0
     - DOCKER_IMAGE=lballabio/quantlib-devenv:bionic
+      CACHEDCC="ccache clang" CACHEDCXX="ccache clang++"
+      CXXFLAGS="-O2 -Wall -Wno-unknown-pragmas -Wno-deprecated-declarations -Werror"
+    # Latest Boost, clang 7.0
+    - DOCKER_IMAGE=lballabio/quantlib-devenv:cosmic
       CACHEDCC="ccache clang" CACHEDCXX="ccache clang++"
       CXXFLAGS="-O2 -Wall -Wno-unknown-pragmas -Wno-deprecated-declarations -Werror"
 
