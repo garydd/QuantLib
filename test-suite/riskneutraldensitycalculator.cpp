@@ -42,15 +42,7 @@
 #include <ql/experimental/finitedifferences/squarerootprocessrndcalculator.hpp>
 #include <ql/models/equity/hestonmodel.hpp>
 #include <ql/types.hpp>
-
-#if defined(__GNUC__) && (((__GNUC__ == 4) && (__GNUC_MINOR__ >= 8)) || (__GNUC__ > 4))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
-#endif
-#include <ql/bind.hpp>
-#if defined(__GNUC__) && (((__GNUC__ == 4) && (__GNUC_MINOR__ >= 8)) || (__GNUC__ > 4))
-#pragma GCC diagnostic pop
-#endif
+#include <ql/functional.hpp>
 
 
 using namespace QuantLib;
@@ -618,7 +610,7 @@ void RiskNeutralDensityCalculatorTest::testBlackScholesWithSkew() {
         ext::make_shared<HestonBlackVolSurface>(
             Handle<HestonModel>(ext::make_shared<HestonModel>(hestonProcess)),
             AnalyticHestonEngine::AndersenPiterbarg,
-            AnalyticHestonEngine::Integration::discreteTrapezoid(32)));
+            AnalyticHestonEngine::Integration::discreteTrapezoid(64)));
 
     const ext::shared_ptr<TimeGrid> timeGrid(new TimeGrid(maturity, 51));
 
