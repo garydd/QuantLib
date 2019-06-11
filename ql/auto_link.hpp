@@ -35,6 +35,8 @@
 #  define QL_LIB_TOOLSET "vc110"
 #elif (_MSC_VER >= 1600)
 #  define QL_LIB_TOOLSET "vc100"
+#elif (_MSC_VER >= 1400)
+#define QL_LIB_TOOLSET "vc90"
 #else
 #  error "unsupported Microsoft compiler"
 #endif

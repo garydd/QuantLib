@@ -26,7 +26,7 @@
 
 // first things first
 #if (_MSC_VER < 1600)
-#  error "versions of Visual C++ prior to VC++10 (2010) are no longer supported"
+//#  error "versions of Visual C++ prior to VC++10 (2010) are no longer supported"
 #endif
 
 /*******************************************
