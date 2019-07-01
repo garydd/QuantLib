@@ -36,6 +36,8 @@ namespace QuantLib {
       dayCounter_(dayCounter), maxDate_(dates.back()), strikes_(strikes),
       lowerExtrapolation_(lowerEx), upperExtrapolation_(upperEx) {
 
+		QL_REQUIRE((dates.size() > 0) && (strikes_.size() > 0), "strikes and dates must be non-empty");
+
         QL_REQUIRE(dates.size()==blackVolMatrix.columns(),
                    "mismatch between date vector and vol matrix colums");
         QL_REQUIRE(strikes_.size()==blackVolMatrix.rows(),

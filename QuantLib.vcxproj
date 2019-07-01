@@ -137,12 +137,16 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">QuantLib-$(qlCompilerTag)-x64-mt</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Applications\boost_1_68_0;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Applications\QuantLib;C:\Applications\boost_1_68_0;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Applications\boost_1_68_0\lib64-msvc-14.0;C:\Applications\boost_1_68_0\stage\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Applications\QuantLib;C:\Applications\boost_1_68_0;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Applications\boost_1_68_0\lib64-msvc-14.0;C:\Applications\boost_1_68_0\stage\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>C:\Applications\boost_1_68_0;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Applications\boost_1_68_0\lib64-msvc-14.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -603,6 +607,7 @@
     <ClInclude Include="ql\instruments\futures.hpp" />
     <ClInclude Include="ql\instruments\vanillastorageoption.hpp" />
     <ClInclude Include="ql\instruments\vanillaswingoption.hpp" />
+    <ClInclude Include="ql\instruments\volatilityswap.hpp" />
     <ClInclude Include="ql\methods\all.hpp" />
     <ClInclude Include="ql\methods\finitedifferences\meshers\all.hpp" />
     <ClInclude Include="ql\methods\finitedifferences\meshers\concentrating1dmesher.hpp" />
@@ -1191,6 +1196,9 @@
     <ClInclude Include="ql\pricingengines\barrier\fdhestonbarrierengine.hpp" />
     <ClInclude Include="ql\pricingengines\barrier\fdhestonrebateengine.hpp" />
     <ClInclude Include="ql\pricingengines\basket\fd2dblackscholesvanillaengine.hpp" />
+    <ClInclude Include="ql\pricingengines\forward\all.hpp" />
+    <ClInclude Include="ql\pricingengines\forward\mcvarianceswaphestonengine.hpp" />
+    <ClInclude Include="ql\pricingengines\forward\mcvolatilityswaphestonengine.hpp" />
     <ClInclude Include="ql\pricingengines\swaption\fdg2swaptionengine.hpp" />
     <ClInclude Include="ql\pricingengines\swaption\fdhullwhiteswaptionengine.hpp" />
     <ClInclude Include="ql\pricingengines\vanilla\analyticcevengine.hpp" />
@@ -1378,7 +1386,6 @@
     <ClInclude Include="ql\pricingengines\basket\mceuropeanbasketengine.hpp" />
     <ClInclude Include="ql\pricingengines\basket\kirkengine.hpp" />
     <ClInclude Include="ql\pricingengines\basket\stulzengine.hpp" />
-    <ClInclude Include="ql\pricingengines\forward\all.hpp" />
     <ClInclude Include="ql\pricingengines\forward\forwardengine.hpp" />
     <ClInclude Include="ql\pricingengines\forward\forwardperformanceengine.hpp" />
     <ClInclude Include="ql\pricingengines\forward\mcvarianceswapengine.hpp" />

@@ -156,6 +156,10 @@
     <ExecutablePath>C:\Applications\boost_1_68_0;C:\Applications\QuantLib;$(ExecutablePath)</ExecutablePath>
     <ReferencePath>C:\Applications\boost_1_68_0\lib64-msvc-14.0;C:\Applications\boost_1_68_0\stage\lib;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ExecutablePath>C:\Applications\boost_1_68_0;C:\Applications\QuantLib;$(ExecutablePath)</ExecutablePath>
+    <ReferencePath>C:\Applications\boost_1_68_0\stage\lib;C:\Applications\boost_1_68_0\lib64-msvc-14.0;$(ReferencePath)</ReferencePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
       <TypeLibraryName>.\build\$(qlCompilerTag)\$(Platform)\$(Configuration)\GlobalOptimizer.tlb</TypeLibraryName>
@@ -422,6 +426,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <AdditionalIncludeDirectories>..\..;C:\Applications\boost_1_68_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

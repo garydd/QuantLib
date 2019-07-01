@@ -1,10 +1,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.645
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QuantLib", "QuantLib.vcxproj", "{AD0A27DA-91DA-46A2-ACBD-296C419ED3AA}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testsuite", "test-suite\testsuite.vcxproj", "{A613045C-34AF-4706-AA3C-730C92524F74}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MulticurveBootstrapping", "Examples\MulticurveBootstrapping\MulticurveBootstrapping.vcxproj", "{4EAC6A0E-20F2-4B5A-8250-7E930CCE3AD0}"
 EndProject
@@ -74,22 +72,6 @@ Global
 		{AD0A27DA-91DA-46A2-ACBD-296C419ED3AA}.Release|Win32.Build.0 = Release|Win32
 		{AD0A27DA-91DA-46A2-ACBD-296C419ED3AA}.Release|x64.ActiveCfg = Release|x64
 		{AD0A27DA-91DA-46A2-ACBD-296C419ED3AA}.Release|x64.Build.0 = Release|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug (static runtime)|Win32.ActiveCfg = Debug (static runtime)|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug (static runtime)|Win32.Build.0 = Debug (static runtime)|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug (static runtime)|x64.ActiveCfg = Debug (static runtime)|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug (static runtime)|x64.Build.0 = Debug (static runtime)|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug|Win32.ActiveCfg = Debug|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug|Win32.Build.0 = Debug|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug|x64.ActiveCfg = Debug|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Debug|x64.Build.0 = Debug|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release (static runtime)|Win32.ActiveCfg = Release (static runtime)|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release (static runtime)|Win32.Build.0 = Release (static runtime)|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release (static runtime)|x64.ActiveCfg = Release (static runtime)|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release (static runtime)|x64.Build.0 = Release (static runtime)|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release|Win32.ActiveCfg = Release|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release|Win32.Build.0 = Release|Win32
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release|x64.ActiveCfg = Release|x64
-		{A613045C-34AF-4706-AA3C-730C92524F74}.Release|x64.Build.0 = Release|x64
 		{4EAC6A0E-20F2-4B5A-8250-7E930CCE3AD0}.Debug (static runtime)|Win32.ActiveCfg = Debug (static runtime)|Win32
 		{4EAC6A0E-20F2-4B5A-8250-7E930CCE3AD0}.Debug (static runtime)|Win32.Build.0 = Debug (static runtime)|Win32
 		{4EAC6A0E-20F2-4B5A-8250-7E930CCE3AD0}.Debug (static runtime)|x64.ActiveCfg = Debug (static runtime)|x64
@@ -418,5 +400,8 @@ Global
 		{43A17E5B-EC94-4EB5-9D68-788BF234AE1F} = {F1820A45-F18D-4C54-90E2-8C4368EAE185}
 		{D85EA161-361A-4CAC-8B77-39E174FCFFE2} = {F1820A45-F18D-4C54-90E2-8C4368EAE185}
 		{ED7AED39-312A-4330-8ADF-DD24F848A754} = {F1820A45-F18D-4C54-90E2-8C4368EAE185}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F2E6A420-256F-4626-93EC-1C441F83BB79}
 	EndGlobalSection
 EndGlobal

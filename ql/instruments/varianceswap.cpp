@@ -28,9 +28,17 @@ namespace QuantLib {
                           Real strike,
                           Real notional,
                           const Date& startDate,
-                          const Date& maturityDate)
+                          const Date& maturityDate,
+						  const std::vector<Date>& fixingDates,
+                          Size daysPerYear,
+						  const VarSwapType::Type vswType,
+                          const VarSwapBarrierConvention::Type vswConvention,
+		                  Real lo_barrier, Real hi_barrier)
     : position_(position), strike_(strike), notional_(notional),
-      startDate_(startDate), maturityDate_(maturityDate) {}
+      startDate_(startDate), maturityDate_(maturityDate), 
+	  fixingDates_(fixingDates), daysPerYear_(daysPerYear), 
+	  vswType_(vswType), vswConvention_(vswConvention), 
+	  lo_barrier_(lo_barrier), hi_barrier_(hi_barrier) {}
 
     Real VarianceSwap::variance() const {
         calculate();
@@ -53,6 +61,12 @@ namespace QuantLib {
         arguments->notional = notional_;
         arguments->startDate = startDate_;
         arguments->maturityDate = maturityDate_;
+        arguments->fixingDates = fixingDates_;
+        arguments->daysPerYear = daysPerYear_;
+        arguments->vswType = vswType_;
+        arguments->vswConvention = vswConvention_;
+        arguments->lo_barrier = lo_barrier_;
+        arguments->hi_barrier = hi_barrier_;
     }
 
     void VarianceSwap::fetchResults(const PricingEngine::results* r) const {
@@ -69,6 +83,12 @@ namespace QuantLib {
         QL_REQUIRE(notional > 0.0, "negative or null notional given");
         QL_REQUIRE(startDate != Date(), "null start date given");
         QL_REQUIRE(maturityDate != Date(), "null maturity date given");
+        if (vswType != VarSwapType::Vanilla) {
+            QL_REQUIRE(fixingDates.size() > 0,
+                       "fixing dates required for non-vanilla variance swap");
+            QL_REQUIRE((lo_barrier >=0) 
+				|| (hi_barrier>=0), "both lower and upper barriers are invalid");
+		}
     }
 
     bool VarianceSwap::isExpired() const {

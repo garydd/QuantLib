@@ -4,5 +4,7 @@
 #include <ql/pricingengines/forward/forwardengine.hpp>
 #include <ql/pricingengines/forward/forwardperformanceengine.hpp>
 #include <ql/pricingengines/forward/mcvarianceswapengine.hpp>
+#include <ql/pricingengines/forward/mcvarianceswaphestonengine.hpp>
+#include <ql/pricingengines/forward/mcvolatilityswaphestonengine.hpp>
 #include <ql/pricingengines/forward/replicatingvarianceswapengine.hpp>
 

@@ -25,10 +25,10 @@
 #ifndef quantlib_variance_swap_hpp
 #define quantlib_variance_swap_hpp
 
-#include <ql/processes/blackscholesprocess.hpp>
 #include <ql/instruments/payoffs.hpp>
 #include <ql/option.hpp>
 #include <ql/position.hpp>
+#include <ql/processes/blackscholesprocess.hpp>
 
 namespace QuantLib {
 
@@ -37,16 +37,31 @@ namespace QuantLib {
 
         \ingroup instruments
     */
+    struct VarSwapType {
+        enum Type { Vanilla = 0, Corridor, Conditional };
+    };
+
+    struct VarSwapBarrierConvention {
+        enum Type { N = 0, N_1, N_1_N };
+    };
+
     class VarianceSwap : public Instrument {
       public:
         class arguments;
         class results;
         class engine;
+
         VarianceSwap(Position::Type position,
                      Real strike,
                      Real notional,
                      const Date& startDate,
-                     const Date& maturityDate);
+                     const Date& maturityDate,
+                     const std::vector<Date>& fixingDates,
+                     Size daysPerYear,
+                     const VarSwapType::Type vswType,
+                     const VarSwapBarrierConvention::Type vswConvention,
+                     const Real lo_barrier = -1,
+					 const Real hi_barrier = -1);
         //! \name Instrument interface
         //@{
         bool isExpired() const;
@@ -58,13 +73,21 @@ namespace QuantLib {
         Position::Type position() const;
         Date startDate() const;
         Date maturityDate() const;
+        std::vector<Date> fixingDates() const;
         Real notional() const;
         // results
         Real variance() const;
+
+        Size daysPerYear() const;
+        VarSwapType::Type vswType() const;
+        VarSwapBarrierConvention::Type vswConvention() const;
+        Real lo_barrier() const;
+        Real hi_barrier() const;
         //@}
         // other
         void setupArguments(PricingEngine::arguments* args) const;
         void fetchResults(const PricingEngine::results*) const;
+
       protected:
         void setupExpired() const;
         // data members
@@ -72,8 +95,14 @@ namespace QuantLib {
         Real strike_;
         Real notional_;
         Date startDate_, maturityDate_;
+        std::vector<Date> fixingDates_;
         // results
         mutable Real variance_;
+        Size daysPerYear_;
+        VarSwapType::Type vswType_;
+        VarSwapBarrierConvention::Type vswConvention_;
+        Real lo_barrier_;
+        Real hi_barrier_;
     };
 
 
@@ -87,6 +116,12 @@ namespace QuantLib {
         Real notional;
         Date startDate;
         Date maturityDate;
+        std::vector<Date> fixingDates;
+        Size daysPerYear;
+        VarSwapType::Type vswType;
+        VarSwapBarrierConvention::Type vswConvention;
+        Real lo_barrier;
+        Real hi_barrier;
     };
 
 
@@ -101,33 +136,35 @@ namespace QuantLib {
     };
 
     //! base class for variance-swap engines
-    class VarianceSwap::engine :
-        public GenericEngine<VarianceSwap::arguments,
-                             VarianceSwap::results> {};
+    class VarianceSwap::engine
+    : public GenericEngine<VarianceSwap::arguments, VarianceSwap::results> {};
 
 
     // inline definitions
 
-    inline Date VarianceSwap::startDate() const {
-        return startDate_;
-    }
+    inline Date VarianceSwap::startDate() const { return startDate_; }
 
-    inline Date VarianceSwap::maturityDate() const {
-        return maturityDate_;
-    }
+    inline Date VarianceSwap::maturityDate() const { return maturityDate_; }
 
-    inline Real VarianceSwap::strike() const {
-        return strike_;
-    }
+    inline std::vector<Date> VarianceSwap::fixingDates() const { return fixingDates_; }
 
-    inline Real VarianceSwap::notional() const {
-        return notional_;
-    }
+    inline Real VarianceSwap::strike() const { return strike_; }
 
-    inline Position::Type VarianceSwap::position() const {
-        return position_;
-    }
+    inline Real VarianceSwap::notional() const { return notional_; }
 
+    inline Position::Type VarianceSwap::position() const { return position_; }
+
+    inline Size VarianceSwap::daysPerYear() const { return daysPerYear_; }
+
+    inline VarSwapType::Type VarianceSwap::vswType() const { return vswType_; }
+
+	inline VarSwapBarrierConvention::Type VarianceSwap::vswConvention() const { return vswConvention_; }
+
+	inline Real VarianceSwap::lo_barrier() const {
+            return lo_barrier_;
+        }
+
+	inline Real VarianceSwap::hi_barrier() const { return hi_barrier_; }
 }
 
 

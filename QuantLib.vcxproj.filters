@@ -2361,9 +2361,6 @@
     <ClInclude Include="ql\pricingengines\basket\stulzengine.hpp">
       <Filter>pricingengines\basket</Filter>
     </ClInclude>
-    <ClInclude Include="ql\pricingengines\forward\all.hpp">
-      <Filter>pricingengines\forward</Filter>
-    </ClInclude>
     <ClInclude Include="ql\pricingengines\forward\forwardengine.hpp">
       <Filter>pricingengines\forward</Filter>
     </ClInclude>
@@ -4284,6 +4281,18 @@
     </ClInclude>
     <ClInclude Include="ql\pricingengines\vanilla\fdsabrvanillaengine.hpp">
       <Filter>pricingengines\vanilla</Filter>
+    </ClInclude>
+    <ClInclude Include="ql\pricingengines\forward\mcvarianceswaphestonengine.hpp">
+      <Filter>pricingengines\forward</Filter>
+    </ClInclude>
+    <ClInclude Include="ql\pricingengines\forward\all.hpp">
+      <Filter>pricingengines\forward</Filter>
+    </ClInclude>
+    <ClInclude Include="ql\instruments\volatilityswap.hpp">
+      <Filter>instruments</Filter>
+    </ClInclude>
+    <ClInclude Include="ql\pricingengines\forward\mcvolatilityswaphestonengine.hpp">
+      <Filter>pricingengines\forward</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

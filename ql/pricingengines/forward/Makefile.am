@@ -7,6 +7,8 @@ this_include_HEADERS = \
     forwardengine.hpp \
     forwardperformanceengine.hpp \
     mcvarianceswapengine.hpp \
+    mcvarianceswaphestonengine.hpp \
+    mcvolatilityswaphestonengine.hpp \
     replicatingvarianceswapengine.hpp
 
 all.hpp: Makefile.am

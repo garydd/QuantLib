@@ -61,6 +61,7 @@ this_include_HEADERS = \
 	vanillaswingoption.hpp \
     vanillaswap.hpp \
     varianceswap.hpp \
+    volatilityswap.hpp \
     yearonyearinflationswap.hpp \
     zerocouponinflationswap.hpp
 
