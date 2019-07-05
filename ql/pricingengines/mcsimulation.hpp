@@ -77,6 +77,9 @@ namespace QuantLib {
         virtual ext::shared_ptr<path_pricer_type> controlPathPricer() const {
             return ext::shared_ptr<path_pricer_type>();
         }
+        virtual ext::shared_ptr<path_pricer_type> auxPathPricer() const {
+            return ext::shared_ptr<path_pricer_type>();
+        }
         virtual ext::shared_ptr<path_generator_type> 
         controlPathGenerator() const {
             return ext::shared_ptr<path_generator_type>();
@@ -164,6 +167,7 @@ namespace QuantLib {
                    requiredSamples != Null<Size>(),
                    "neither tolerance nor number of samples set");
 
+		ext::shared_ptr<path_pricer_type> auxPP = this->auxPathPricer();
         //! Initialize the one-factor Monte Carlo
         if (this->controlVariate_) {
 
@@ -180,19 +184,29 @@ namespace QuantLib {
 
             ext::shared_ptr<path_generator_type> controlPG = 
                 this->controlPathGenerator();
-
-            this->mcModel_ =
-                ext::shared_ptr<MonteCarloModel<MC,RNG,S> >(
-                    new MonteCarloModel<MC,RNG,S>(
-                           pathGenerator(), this->pathPricer(), stats_type(),
-                           this->antitheticVariate_, controlPP,
-                           controlVariateValue, controlPG));
+            if (auxPP) {
+                this->mcModel_ =
+                    ext::shared_ptr<MonteCarloModel<MC, RNG, S> >(new MonteCarloModel<MC, RNG, S>(
+                        pathGenerator(), this->pathPricer(), stats_type(), this->antitheticVariate_,
+                        controlPP, controlVariateValue, controlPG, stats_type(), auxPP));
+            } else {
+                this->mcModel_ =
+						ext::shared_ptr<MonteCarloModel<MC, RNG, S> >(new MonteCarloModel<MC, RNG, S>(
+							pathGenerator(), this->pathPricer(), stats_type(), this->antitheticVariate_,
+							controlPP, controlVariateValue, controlPG));
+            }
+            
         } else {
-            this->mcModel_ =
-                ext::shared_ptr<MonteCarloModel<MC,RNG,S> >(
-                    new MonteCarloModel<MC,RNG,S>(
-                           pathGenerator(), this->pathPricer(), S(),
-                           this->antitheticVariate_));
+            if (auxPP) {
+                this->mcModel_ =
+                    ext::shared_ptr<MonteCarloModel<MC, RNG, S> >(new MonteCarloModel<MC, RNG, S>(
+                        pathGenerator(), this->pathPricer(), S(), this->antitheticVariate_, S(), auxPP));
+			} else {
+                this->mcModel_ = ext::shared_ptr<MonteCarloModel<MC, RNG, S> >(
+                    new MonteCarloModel<MC, RNG, S>(pathGenerator(), this->pathPricer(), S(),
+                                                    this->antitheticVariate_));
+            }
+            
         }
 
         if (requiredTolerance != Null<Real>()) {

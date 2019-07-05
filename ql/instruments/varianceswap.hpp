@@ -61,7 +61,8 @@ namespace QuantLib {
                      const VarSwapType::Type vswType,
                      const VarSwapBarrierConvention::Type vswConvention,
                      const Real lo_barrier = -1,
-					 const Real hi_barrier = -1);
+					 const Real hi_barrier = -1,
+					 const int expectedN = -1);
         //! \name Instrument interface
         //@{
         bool isExpired() const;
@@ -83,6 +84,8 @@ namespace QuantLib {
         VarSwapBarrierConvention::Type vswConvention() const;
         Real lo_barrier() const;
         Real hi_barrier() const;
+        int expectedN() const;
+        Real impliedStrike() const;
         //@}
         // other
         void setupArguments(PricingEngine::arguments* args) const;
@@ -98,11 +101,13 @@ namespace QuantLib {
         std::vector<Date> fixingDates_;
         // results
         mutable Real variance_;
+        mutable Real impliedStrike_;
         Size daysPerYear_;
         VarSwapType::Type vswType_;
         VarSwapBarrierConvention::Type vswConvention_;
         Real lo_barrier_;
         Real hi_barrier_;
+        int expectedN_;
     };
 
 
@@ -122,6 +127,7 @@ namespace QuantLib {
         VarSwapBarrierConvention::Type vswConvention;
         Real lo_barrier;
         Real hi_barrier;
+        int expectedN;
     };
 
 
@@ -129,9 +135,11 @@ namespace QuantLib {
     class VarianceSwap::results : public Instrument::results {
       public:
         Real variance;
+        Real impliedStrike;
         void reset() {
             Instrument::results::reset();
             variance = Null<Real>();
+            impliedStrike = Null<Real>();
         }
     };
 
@@ -165,6 +173,10 @@ namespace QuantLib {
         }
 
 	inline Real VarianceSwap::hi_barrier() const { return hi_barrier_; }
+
+	inline int VarianceSwap::expectedN() const { return expectedN_; }
+
+	// inline Real VarianceSwap::impliedStrike() const { return impliedStrike_; }
 }
 
 

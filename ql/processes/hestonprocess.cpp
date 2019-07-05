@@ -109,7 +109,8 @@ namespace QuantLib {
                                            const Array& dx) const {
         Array tmp(2);
         tmp[0] = x0[0] * std::exp(dx[0]);
-        tmp[1] = x0[1] + dx[1];
+        //tmp[1] = x0[1] + dx[1];
+        tmp[1] = std::max(x0[1] + dx[1], 0.0);
         return tmp;
     }
 

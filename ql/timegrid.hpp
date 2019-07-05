@@ -113,7 +113,7 @@ namespace QuantLib {
                 dtMax = last/steps;
             }
 
-            Time periodBegin = 0.0;
+            Time periodBegin = mandatoryTimes_.front(); //0.0
             times_.push_back(periodBegin);
             for (std::vector<Time>::const_iterator t=mandatoryTimes_.begin();
                                                    t<mandatoryTimes_.end();

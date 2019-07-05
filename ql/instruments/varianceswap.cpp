@@ -33,12 +33,13 @@ namespace QuantLib {
                           Size daysPerYear,
 						  const VarSwapType::Type vswType,
                           const VarSwapBarrierConvention::Type vswConvention,
-		                  Real lo_barrier, Real hi_barrier)
+		                  Real lo_barrier, Real hi_barrier, int expectedN)
     : position_(position), strike_(strike), notional_(notional),
       startDate_(startDate), maturityDate_(maturityDate), 
 	  fixingDates_(fixingDates), daysPerYear_(daysPerYear), 
 	  vswType_(vswType), vswConvention_(vswConvention), 
-	  lo_barrier_(lo_barrier), hi_barrier_(hi_barrier) {}
+	  lo_barrier_(lo_barrier), hi_barrier_(hi_barrier),
+	  expectedN_(expectedN) {}
 
     Real VarianceSwap::variance() const {
         calculate();
@@ -46,9 +47,16 @@ namespace QuantLib {
         return variance_;
     }
 
+	Real VarianceSwap::impliedStrike() const {
+        calculate();
+        QL_REQUIRE(impliedStrike_ != Null<Real>(), "result not available");
+        return impliedStrike_;
+    }
+
     void VarianceSwap::setupExpired() const {
         Instrument::setupExpired();
         variance_ = Null<Real>();
+        impliedStrike_ = Null<Real>();
     }
 
     void VarianceSwap::setupArguments(PricingEngine::arguments* args) const {
@@ -67,6 +75,8 @@ namespace QuantLib {
         arguments->vswConvention = vswConvention_;
         arguments->lo_barrier = lo_barrier_;
         arguments->hi_barrier = hi_barrier_;
+        arguments->strike = strike_;
+        arguments->expectedN = expectedN_;
     }
 
     void VarianceSwap::fetchResults(const PricingEngine::results* r) const {
@@ -74,6 +84,7 @@ namespace QuantLib {
         const VarianceSwap::results* results =
             dynamic_cast<const VarianceSwap::results*>(r);
         variance_ = results->variance;
+        impliedStrike_ = results->impliedStrike;
     }
 
     void VarianceSwap::arguments::validate() const {
@@ -88,6 +99,7 @@ namespace QuantLib {
                        "fixing dates required for non-vanilla variance swap");
             QL_REQUIRE((lo_barrier >=0) 
 				|| (hi_barrier>=0), "both lower and upper barriers are invalid");
+            QL_REQUIRE(expectedN > 0, "expectedN must be postive integer");
 		}
     }
 

@@ -25,8 +25,8 @@
 #ifndef quantlib_montecarlo_model_hpp
 #define quantlib_montecarlo_model_hpp
 
-#include <ql/methods/montecarlo/mctraits.hpp>
 #include <ql/math/statistics/statistics.hpp>
+#include <ql/methods/montecarlo/mctraits.hpp>
 #include <ql/shared_ptr.hpp>
 
 namespace QuantLib {
@@ -58,28 +58,59 @@ namespace QuantLib {
         typedef typename path_pricer_type::result_type result_type;
         typedef S stats_type;
         // constructor
-        MonteCarloModel(
-                  const ext::shared_ptr<path_generator_type>& pathGenerator,
-                  const ext::shared_ptr<path_pricer_type>& pathPricer,
-                  const stats_type& sampleAccumulator,
-                  bool antitheticVariate,
-                  const ext::shared_ptr<path_pricer_type>& cvPathPricer
-                        = ext::shared_ptr<path_pricer_type>(),
-                  result_type cvOptionValue = result_type(),
-                  const ext::shared_ptr<path_generator_type>& cvPathGenerator
-                        = ext::shared_ptr<path_generator_type>())
+        MonteCarloModel(const ext::shared_ptr<path_generator_type>& pathGenerator,
+                        const ext::shared_ptr<path_pricer_type>& pathPricer,
+                        const stats_type& sampleAccumulator,
+                        bool antitheticVariate,
+                        const ext::shared_ptr<path_pricer_type>& cvPathPricer =
+                            ext::shared_ptr<path_pricer_type>(),
+                        result_type cvOptionValue = result_type(),
+                        const ext::shared_ptr<path_generator_type>& cvPathGenerator =
+                            ext::shared_ptr<path_generator_type>(),
+                        const stats_type& auxSampleAccumulator = stats_type(),
+                        const ext::shared_ptr<path_pricer_type>& auxPathPricer =
+                            ext::shared_ptr<path_pricer_type>())
         : pathGenerator_(pathGenerator), pathPricer_(pathPricer),
-          sampleAccumulator_(sampleAccumulator),
-          isAntitheticVariate_(antitheticVariate),
+          sampleAccumulator_(sampleAccumulator), isAntitheticVariate_(antitheticVariate),
           cvPathPricer_(cvPathPricer), cvOptionValue_(cvOptionValue),
-          cvPathGenerator_(cvPathGenerator) {
+          cvPathGenerator_(cvPathGenerator), 
+		  auxSampleAccumulator_(auxSampleAccumulator),
+          auxPathPricer_(auxPathPricer) {
             if (!cvPathPricer_)
                 isControlVariate_ = false;
             else
                 isControlVariate_ = true;
+            if (!auxPathPricer_)
+                hasAuxiliaryPathPricer_ = false;
+            else
+                hasAuxiliaryPathPricer_ = true;
         }
+
+		MonteCarloModel(const ext::shared_ptr<path_generator_type>& pathGenerator,
+                        const ext::shared_ptr<path_pricer_type>& pathPricer,
+                        const stats_type& sampleAccumulator,
+                        bool antitheticVariate,
+                        const stats_type& auxSampleAccumulator,
+                        const ext::shared_ptr<path_pricer_type>& auxPathPricer)
+        : pathGenerator_(pathGenerator), pathPricer_(pathPricer),
+          sampleAccumulator_(sampleAccumulator), isAntitheticVariate_(antitheticVariate),
+          cvPathPricer_(ext::shared_ptr<path_pricer_type>()), cvOptionValue_(result_type()),
+          cvPathGenerator_(ext::shared_ptr<path_generator_type>()),
+          auxSampleAccumulator_(auxSampleAccumulator), auxPathPricer_(auxPathPricer) {
+            if (!cvPathPricer_)
+                isControlVariate_ = false;
+            else
+                isControlVariate_ = true;
+            if (!auxPathPricer_)
+                hasAuxiliaryPathPricer_ = false;
+            else
+                hasAuxiliaryPathPricer_ = true;
+        }
+
         void addSamples(Size samples);
         const stats_type& sampleAccumulator() const;
+        const stats_type& auxSampleAccumulator() const;
+
       private:
         ext::shared_ptr<path_generator_type> pathGenerator_;
         ext::shared_ptr<path_pricer_type> pathPricer_;
@@ -89,23 +120,25 @@ namespace QuantLib {
         result_type cvOptionValue_;
         bool isControlVariate_;
         ext::shared_ptr<path_generator_type> cvPathGenerator_;
+        bool hasAuxiliaryPathPricer_;
+        ext::shared_ptr<path_pricer_type> auxPathPricer_;
+        stats_type auxSampleAccumulator_;
     };
 
     // inline definitions
     template <template <class> class MC, class RNG, class S>
-    inline void MonteCarloModel<MC,RNG,S>::addSamples(Size samples) {
-        for(Size j = 1; j <= samples; j++) {
+    inline void MonteCarloModel<MC, RNG, S>::addSamples(Size samples) {
+        for (Size j = 1; j <= samples; j++) {
 
             const sample_type& path = pathGenerator_->next();
             result_type price = (*pathPricer_)(path.value);
 
             if (isControlVariate_) {
                 if (!cvPathGenerator_) {
-                    price += cvOptionValue_-(*cvPathPricer_)(path.value);
-                }
-                else {
+                    price += cvOptionValue_ - (*cvPathPricer_)(path.value);
+                } else {
                     const sample_type& cvPath = cvPathGenerator_->next();
-                    price += cvOptionValue_-(*cvPathPricer_)(cvPath.value);
+                    price += cvOptionValue_ - (*cvPathPricer_)(cvPath.value);
                 }
             }
 
@@ -114,26 +147,36 @@ namespace QuantLib {
                 result_type price2 = (*pathPricer_)(atPath.value);
                 if (isControlVariate_) {
                     if (!cvPathGenerator_)
-                        price2 += cvOptionValue_-(*cvPathPricer_)(atPath.value);
+                        price2 += cvOptionValue_ - (*cvPathPricer_)(atPath.value);
                     else {
                         const sample_type& cvPath = cvPathGenerator_->antithetic();
-                        price2 += cvOptionValue_-(*cvPathPricer_)(cvPath.value);
+                        price2 += cvOptionValue_ - (*cvPathPricer_)(cvPath.value);
                     }
                 }
 
-                sampleAccumulator_.add((price+price2)/2.0, path.weight);
+                sampleAccumulator_.add((price + price2) / 2.0, path.weight);
             } else {
                 sampleAccumulator_.add(price, path.weight);
             }
+
+            if (hasAuxiliaryPathPricer_) {
+                result_type auxPrice = (*auxPathPricer_)(path.value);
+                auxSampleAccumulator_.add(auxPrice, path.weight);
+			}
         }
     }
 
     template <template <class> class MC, class RNG, class S>
-    inline const typename MonteCarloModel<MC,RNG,S>::stats_type&
-    MonteCarloModel<MC,RNG,S>::sampleAccumulator() const {
+    inline const typename MonteCarloModel<MC, RNG, S>::stats_type&
+    MonteCarloModel<MC, RNG, S>::sampleAccumulator() const {
         return sampleAccumulator_;
     }
 
+	template <template <class> class MC, class RNG, class S>
+    inline const typename MonteCarloModel<MC, RNG, S>::stats_type&
+    MonteCarloModel<MC, RNG, S>::auxSampleAccumulator() const {
+        return auxSampleAccumulator_;
+    }
 }
 
 

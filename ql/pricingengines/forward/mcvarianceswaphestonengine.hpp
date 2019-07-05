@@ -68,12 +68,6 @@ namespace QuantLib {
         void calculate() const {
             McSimulation<MultiVariate, RNG, S>::calculate(requiredTolerance_, requiredSamples_,
                                                           maxSamples_);
-            results_.variance = this->mcModel_->sampleAccumulator().mean();
-
-            if (this->arguments_.fixingDates.size() > 0) {
-                results_.variance *= this->arguments_.daysPerYear;
-            }
-
             DiscountFactor riskFreeDiscount =
                 process_->riskFreeRate()->discount(arguments_.maturityDate);
             Real multiplier;
@@ -89,7 +83,28 @@ namespace QuantLib {
             }
             multiplier *= riskFreeDiscount * arguments_.notional;
 
-            results_.value = multiplier * (results_.variance - arguments_.strike);
+			results_.variance = this->mcModel_->sampleAccumulator().mean();
+			if (this->arguments_.vswType == VarSwapType::Vanilla) {
+                // results_.variance = this->mcModel_->sampleAccumulator().mean();
+                if (this->arguments_.fixingDates.size() > 0) {
+                    results_.variance *= this->arguments_.daysPerYear;
+                }
+                results_.value = multiplier * (results_.variance - arguments_.strike);
+                results_.impliedStrike = std::sqrt(results_.variance);
+                results_.additionalResults["ImpliedStrike"] = results_.impliedStrike;
+            } else {
+                // results_.variance = this->mcModel_->sampleAccumulator().mean();
+				// corridor/conditional VAR: variance contains the payoff
+                results_.value = multiplier * results_.variance;
+
+				Real N = this->mcModel_->auxSampleAccumulator().mean();
+                results_.impliedStrike =
+                    std::sqrt((results_.variance +
+                     N * arguments_.strike * arguments_.strike / arguments_.expectedN) /
+                    (N / arguments_.expectedN));
+                std::cout << "Implied Strike: " << results_.impliedStrike << std::endl;
+                results_.additionalResults["ImpliedStrike"] = results_.impliedStrike;
+			}
 
             if (RNG::allowsErrorEstimate) {
                 Real varianceError = this->mcModel_->sampleAccumulator().errorEstimate();
@@ -100,6 +115,7 @@ namespace QuantLib {
       protected:
         // McSimulation implementation
         ext::shared_ptr<path_pricer_type> pathPricer() const;
+        ext::shared_ptr<path_pricer_type> auxPathPricer() const;
         TimeGrid timeGrid() const;
 
         ext::shared_ptr<path_generator_type> pathGenerator() const {
@@ -159,15 +175,15 @@ namespace QuantLib {
         ext::shared_ptr<HestonProcess> process_;
     };
 
-    class VarianceBarrierHestonPathPricer : public PathPricer<MultiPath> {
+    class VarianceBarrierHestonAuxPathPricer : public PathPricer<MultiPath> {
       public:
-        VarianceBarrierHestonPathPricer(const ext::shared_ptr<HestonProcess>& process,
-                                        const VarSwapType::Type vswType,
-                                        const VarSwapBarrierConvention::Type vswConvention,
-                                        const Real lo_barrier,
-                                        const Real hi_barrier)
-        : process_(process), vswType_(vswType), vswConvention_(vswConvention), 
-			lo_barrier_(lo_barrier), hi_barrier_(hi_barrier) {}
+        VarianceBarrierHestonAuxPathPricer(const ext::shared_ptr<HestonProcess>& process,
+                                           const VarSwapType::Type vswType,
+                                           const VarSwapBarrierConvention::Type vswConvention,
+                                           const Real lo_barrier,
+                                           const Real hi_barrier)
+        : process_(process), vswType_(vswType), vswConvention_(vswConvention),
+          lo_barrier_(lo_barrier), hi_barrier_(hi_barrier) {}
         Real operator()(const MultiPath& multipath) const;
 
       private:
@@ -176,6 +192,32 @@ namespace QuantLib {
         const VarSwapBarrierConvention::Type vswConvention_;
         const Real lo_barrier_;
         const Real hi_barrier_;
+    };
+
+    class VarianceBarrierHestonPathPricer : public PathPricer<MultiPath> {
+      public:
+        VarianceBarrierHestonPathPricer(const ext::shared_ptr<HestonProcess>& process,
+                                        const VarSwapType::Type vswType,
+                                        const VarSwapBarrierConvention::Type vswConvention,
+                                        const Real lo_barrier,
+                                        const Real hi_barrier,
+										const Real strike,
+										const int daysPerYear,
+										const int expectedN)
+        : process_(process), vswType_(vswType), vswConvention_(vswConvention), 
+			lo_barrier_(lo_barrier), hi_barrier_(hi_barrier), 
+			strike_(strike), daysPerYear_(daysPerYear), expectedN_(expectedN) {}
+        Real operator()(const MultiPath& multipath) const;
+
+      private:
+        ext::shared_ptr<HestonProcess> process_;
+        const VarSwapType::Type vswType_;
+        const VarSwapBarrierConvention::Type vswConvention_;
+        const Real lo_barrier_;
+        const Real hi_barrier_;
+        const Real strike_;
+        const int daysPerYear_;
+        const int expectedN_;
     };
     // inline definitions
 
@@ -207,6 +249,10 @@ namespace QuantLib {
     template <class RNG, class S>
     inline TimeGrid MCVarianceSwapHestonEngine<RNG, S>::timeGrid() const {
         Time t = this->process_->time(this->arguments_.maturityDate);
+        Time t0 = this->process_->time(this->arguments_.startDate);
+        QL_REQUIRE(t0 == 0.0 || this->arguments_.fixingDates.size() > 0,
+			"fixingDates required for non spot starting VAR");
+        QL_REQUIRE(t0 == 0.0, "Forward-start VAR not implemented");
         std::vector<Time> fixing_times;
         // QL_REQUIRE(!(this->arguments_.fixingDates.empty()), "empty fixing dates")
         for (std::vector<Date>::iterator f_date = this->arguments_.fixingDates.begin();
@@ -221,22 +267,25 @@ namespace QuantLib {
                                           << this->arguments_.maturityDate);
         }
 
+		TimeGrid grid;
         if (timeSteps_ != Null<Size>()) {
             if (!fixing_times.empty()) {
-                return TimeGrid(fixing_times.begin(), fixing_times.end(), this->timeSteps_);
+                grid = TimeGrid(fixing_times.begin(), fixing_times.end(), this->timeSteps_);
             } else {
-                return TimeGrid(t, this->timeSteps_);
+                grid = TimeGrid(t, this->timeSteps_); 
             }
         } else if (timeStepsPerYear_ != Null<Size>()) {
             Size steps = static_cast<Size>(timeStepsPerYear_ * t);
             if (!fixing_times.empty()) {
-                return TimeGrid(fixing_times.begin(), fixing_times.end(), std::max<Size>(steps, 1));
+                grid = TimeGrid(fixing_times.begin(), fixing_times.end(), std::max<Size>(steps, 1));
             } else {
-                return TimeGrid(t, std::max<Size>(steps, 1));
+                grid = TimeGrid(t, std::max<Size>(steps, 1));
             }
         } else {
             QL_FAIL("time steps not specified");
         }
+        // std::cout << "timegrid front: " << grid.front() << std::endl;
+        return grid;
     }
 
 
@@ -252,10 +301,28 @@ namespace QuantLib {
 													this->arguments_.vswType,
 													this->arguments_.vswConvention,
 													this->arguments_.lo_barrier,
-													this->arguments_.hi_barrier));
+													this->arguments_.hi_barrier, 
+													this->arguments_.strike, 
+													this->arguments_.daysPerYear,
+													this->arguments_.expectedN ));
         }
     }
 
+	template <class RNG, class S>
+    inline ext::shared_ptr<typename MCVarianceSwapHestonEngine<RNG, S>::path_pricer_type>
+    MCVarianceSwapHestonEngine<RNG, S>::auxPathPricer() const {
+        if (this->arguments_.vswType == VarSwapType::Vanilla) {
+			// no need auxiliary path pricer
+            return ext::shared_ptr<typename MCVarianceSwapHestonEngine<RNG, S>::path_pricer_type>();
+        } else {
+			// add auxiliary pricer
+            return ext::shared_ptr<typename MCVarianceSwapHestonEngine<RNG, S>::path_pricer_type>(
+                new VarianceBarrierHestonAuxPathPricer(
+                    process_, this->arguments_.vswType, this->arguments_.vswConvention,
+                    this->arguments_.lo_barrier, this->arguments_.hi_barrier
+                    ));
+        }
+    }
 
     template <class RNG, class S>
     inline MakeMCVarianceSwapHestonEngine<RNG, S>::MakeMCVarianceSwapHestonEngine(
@@ -377,6 +444,7 @@ namespace QuantLib {
         Real rv = 0.0;
         TimeGrid tg = multiPath[0].timeGrid();
         std::vector<Time> mtg = tg.mandatoryTimes();
+        // std::cout << " " << mtg.front() << std::endl;
         Size idx, idx_prev;
         Real logReturn;
         int N = 0;
@@ -386,15 +454,15 @@ namespace QuantLib {
                 // std::cout << *t << ' ' << idx << ' \n' ;
                 // QL_REQUIRE(multiPath[0].value(idx) == 0.0, "abc" << *(mtg.begin()) << "xyz" <<
                 // *(mtg.end()) << "def") <<std::endl;
-                if (idx > 0) {
-                    logReturn = std::logf(multiPath[0].value(idx) / multiPath[0].value(idx_prev));
+                if (idx > 0 ) {
+                    logReturn = std::log(multiPath[0].value(idx) / multiPath[0].value(idx_prev));
                     rv += logReturn * logReturn;
                     N += 1;
                 }
                 idx_prev = idx;
             }
             // return logReturn;
-            // std::cout << "RV: " << rv<<" size" <<mtg.size() <<std::endl;
+            //std::cout << "RV: " << rv<<" size" <<mtg.size() <<" N:" << N<<std::endl;
             return rv / N;
             //(mtg.size() - 1);
         } else {
@@ -422,7 +490,7 @@ namespace QuantLib {
             idx = tg.closestIndex(*t);
             //std::cout << " " << multiPath[0].value(idx) << std::endl;
             if (idx > 0) {
-                logReturn = std::logf(multiPath[0].value(idx) / multiPath[0].value(idx_prev));
+                logReturn = std::log(multiPath[0].value(idx) / multiPath[0].value(idx_prev));
                 bool breach_lo = (this->lo_barrier_ >= 0) ? 
 					(multiPath[0].value(idx) < this->lo_barrier_) : false;
                 bool breach_hi = (this->hi_barrier_ >= 0) ?
@@ -451,9 +519,61 @@ namespace QuantLib {
 			}
             idx_prev = idx;
         }
-        //std::cout << " " << rv <<" "<< N << std::endl;
-        return (rv / N) ;
+        // std::cout << " " << rv <<" "<< N << std::endl;
+        return (N <= 0 )? 0.0 : rv * this->daysPerYear_ / this->expectedN_ - 
+			this->strike_ * this->strike_ * N / this->expectedN_;
 	}
+
+	inline Real VarianceBarrierHestonAuxPathPricer::operator()(const MultiPath& multiPath) const {
+            QL_REQUIRE(multiPath.pathSize() > 0, "the path cannot be empty");
+            TimeGrid tg = multiPath[0].timeGrid();
+            std::vector<Time> mtg = tg.mandatoryTimes();
+            Size idx, idx_prev;
+            int N = 0;
+            for (std::vector<Time>::iterator t = mtg.begin(); t != mtg.end(); ++t) {
+                idx = tg.closestIndex(*t);
+                // std::cout << " " << multiPath[0].value(idx) << std::endl;
+                if (idx > 0) {
+                    bool breach_lo = (this->lo_barrier_ >= 0) ?
+                                         (multiPath[0].value(idx) < this->lo_barrier_) :
+                                         false;
+                    bool breach_hi = (this->hi_barrier_ >= 0) ?
+                                         (multiPath[0].value(idx) > this->hi_barrier_) :
+                                         false;
+                    bool breach_lo_prev = (this->lo_barrier_ >= 0) ?
+                                              (multiPath[0].value(idx_prev) < this->lo_barrier_) :
+                                              false;
+                    bool breach_hi_prev = (this->hi_barrier_ >= 0) ?
+                                              (multiPath[0].value(idx_prev) > this->hi_barrier_) :
+                                              false;
+                    bool breach_overall;
+                    if (this->vswConvention_ == VarSwapBarrierConvention::N) {
+                        breach_overall = breach_lo || breach_hi;
+                    } else if (this->vswConvention_ == VarSwapBarrierConvention::N_1) {
+                        breach_overall = breach_lo_prev || breach_hi_prev;
+                    } else {
+                        breach_overall = breach_lo_prev || breach_hi_prev || breach_lo || breach_hi;
+                    }
+
+                    if (!breach_overall) {
+                        N += 1;
+                    } else {
+                        if (this->vswType_ == VarSwapType::Corridor) {
+                            N += 1;
+                        }
+                    }
+                }
+                idx_prev = idx;
+            }
+            // std::cout << " " << rv <<" "<< N << std::endl;
+            return (N <= 0) ? 0.0 : N;
+        }
+
+
+
+
+
+
 }
 
 
