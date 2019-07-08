@@ -70,7 +70,9 @@ namespace QuantLib {
             McSimulation<MultiVariate, RNG, S>::calculate(requiredTolerance_, requiredSamples_,
                                                           maxSamples_);
             results_.variance = this->mcModel_->sampleAccumulator().mean();
-
+            if (this->arguments_.fixingDates.size() > 0) {
+                results_.variance *= std::sqrt(this->arguments_.daysPerYear);
+            }
             DiscountFactor riskFreeDiscount =
                 process_->riskFreeRate()->discount(arguments_.maturityDate);
             Real multiplier;
@@ -86,8 +88,9 @@ namespace QuantLib {
             }
             multiplier *= riskFreeDiscount * arguments_.notional;
 
-            results_.value =
-                multiplier * (std::sqrt(std::max(results_.variance, 0.0)) - arguments_.strike);
+            results_.value = multiplier * (results_.variance - arguments_.strike);
+            results_.impliedStrike = results_.variance;
+            results_.additionalResults["ImpliedStrike"] = results_.impliedStrike;
 
             if (RNG::allowsErrorEstimate) {
                 Real varianceError = this->mcModel_->sampleAccumulator().errorEstimate();
@@ -188,15 +191,44 @@ namespace QuantLib {
     inline TimeGrid MCVolatilitySwapHestonEngine<RNG, S>::timeGrid() const {
 
         Time t = this->process_->time(this->arguments_.maturityDate);
+        Time t0 = this->process_->time(this->arguments_.startDate);
+        QL_REQUIRE(t0 == 0.0 || this->arguments_.fixingDates.size() > 0,
+                   "fixingDates required for non spot starting VolSwap");
+        QL_REQUIRE(t0 == 0.0, "Forward-start VolSwap not implemented");
 
+        std::vector<Time> fixing_times;
+        // QL_REQUIRE(!(this->arguments_.fixingDates.empty()), "empty fixing dates")
+        for (std::vector<Date>::iterator f_date = this->arguments_.fixingDates.begin();
+             f_date != this->arguments_.fixingDates.end(); ++f_date) {
+            fixing_times.push_back(this->process_->time(*f_date));
+            // std::cout << "timegrid" << *f_date << ' ' << this->process_->time(*f_date) << ' \n';
+        }
+        if (!fixing_times.empty()) {
+            QL_REQUIRE(this->arguments_.fixingDates.back() == this->arguments_.maturityDate,
+                       "last fixing date" << this->arguments_.fixingDates.back()
+                                          << " must be equal to maturity "
+                                          << this->arguments_.maturityDate);
+        }
+
+        TimeGrid grid;
         if (timeSteps_ != Null<Size>()) {
-            return TimeGrid(t, this->timeSteps_);
+            if (!fixing_times.empty()) {
+                grid = TimeGrid(fixing_times.begin(), fixing_times.end(), this->timeSteps_);
+            } else {
+                grid = TimeGrid(t, this->timeSteps_);
+            }
         } else if (timeStepsPerYear_ != Null<Size>()) {
             Size steps = static_cast<Size>(timeStepsPerYear_ * t);
-            return TimeGrid(t, std::max<Size>(steps, 1));
+            if (!fixing_times.empty()) {
+                grid = TimeGrid(fixing_times.begin(), fixing_times.end(), std::max<Size>(steps, 1));
+            } else {
+                grid = TimeGrid(t, std::max<Size>(steps, 1));
+            }
         } else {
             QL_FAIL("time steps not specified");
         }
+        // std::cout << "timegrid front: " << grid.front() << std::endl;
+        return grid;
     }
 
 
@@ -292,12 +324,32 @@ namespace QuantLib {
     inline Real VolatilityHestonPathPricer::operator()(const MultiPath& multiPath) const {
         // const Path& path = multiPath[0];
         QL_REQUIRE(multiPath.pathSize() > 0, "the path cannot be empty");
-        Time t0 = multiPath[0].timeGrid().front();
-        Time t = multiPath[0].timeGrid().back();
-        Time dt = multiPath[0].timeGrid().dt(0);
-        SegmentIntegral integrator(static_cast<Size>(t / dt));
-        detail_heston::Integrand f(multiPath, process_);
-        return integrator(f, t0, t) / t;
+        Real rv = 0.0;
+        TimeGrid tg = multiPath[0].timeGrid();
+        std::vector<Time> mtg = tg.mandatoryTimes();
+        Size idx, idx_prev;
+        Real logReturn;
+        int N = 0;
+        if (mtg.size() > 1) {
+            for (std::vector<Time>::iterator t = mtg.begin(); t != mtg.end(); ++t) {
+                idx = tg.closestIndex(*t);
+                if (idx > 0) {
+                    logReturn = std::log(multiPath[0].value(idx) / multiPath[0].value(idx_prev));
+                    rv += logReturn * logReturn;
+                    N += 1;
+                }
+                idx_prev = idx;
+            }
+            return std::sqrt(rv / N);
+        } else {
+            Time t0 = multiPath[0].timeGrid().front();
+            Time t = multiPath[0].timeGrid().back();
+            Time dt = multiPath[0].timeGrid().dt(0);
+            SegmentIntegral integrator(static_cast<Size>(t / dt));
+            detail_heston::Integrand f(multiPath, process_);
+            return std::sqrt(integrator(f, t0, t) / t);
+		}
+        
     }
 }
 

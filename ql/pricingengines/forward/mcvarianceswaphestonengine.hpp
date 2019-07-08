@@ -90,7 +90,7 @@ namespace QuantLib {
                     results_.variance *= this->arguments_.daysPerYear;
                 }
                 results_.value = multiplier * (results_.variance - arguments_.strike);
-                results_.impliedStrike = std::sqrt(results_.variance);
+                results_.impliedStrike = std::sqrt(std::max(results_.variance, 0.0));
                 results_.additionalResults["ImpliedStrike"] = results_.impliedStrike;
             } else {
                 // results_.variance = this->mcModel_->sampleAccumulator().mean();
@@ -99,9 +99,9 @@ namespace QuantLib {
 
 				Real N = this->mcModel_->auxSampleAccumulator().mean();
                 results_.impliedStrike =
-                    std::sqrt((results_.variance +
+                    std::sqrt(std::max((results_.variance +
                      N * arguments_.strike * arguments_.strike / arguments_.expectedN) /
-                    (N / arguments_.expectedN));
+                    (N / arguments_.expectedN), 0.0));
                 std::cout << "Implied Strike: " << results_.impliedStrike << std::endl;
                 results_.additionalResults["ImpliedStrike"] = results_.impliedStrike;
 			}
